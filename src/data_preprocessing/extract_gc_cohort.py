@@ -10,7 +10,7 @@ The script writes two restricted-data outputs:
 1. A GC cohort file containing admission identifiers, derived age, gender, and
    a compatibility label field.
 2. A temporal laboratory-event file restricted to the supplied top-100 clinical
-   variables and the first 336 hours after hospital admission.
+   variables and the first 14 days (336 hours) after hospital admission.
 
 The resulting outputs are derived from restricted MIMIC-IV data and therefore
 cannot be committed to a public repository.
@@ -222,7 +222,7 @@ def extract_gc_laboratory_events(
     admission_times: dict[int, pd.Timestamp],
 ) -> pd.DataFrame:
     """
-    Extract top-100 laboratory events from GC admissions within 336 admission hours.
+    Extract top-100 laboratory events from GC admissions within 14 days (336 hours) after hospital admission.
     """
     records: list[pd.DataFrame] = []
 
