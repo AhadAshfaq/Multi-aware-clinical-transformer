@@ -2,7 +2,7 @@
 Construct the patient-excluded General Cancer (GC) cohort for pretraining.
 
 This script creates the external GC cohort used for self-supervised
-pretraining in the thesis workflow. It identifies MIMIC-IV admissions with
+pretraining in the workflow. It identifies MIMIC-IV admissions with
 neoplasm diagnoses, then excludes every cancer admission belonging to patients
 represented in the downstream Aplasia (AP) or Neutropenic Fever (NF) cohorts.
 
@@ -113,7 +113,7 @@ def load_downstream_subjects(
 
 def identify_cancer_admissions(diagnoses_path: Path) -> set[int]:
     """
-    Identify candidate cancer admissions using thesis-defined diagnosis criteria.
+    Identify candidate cancer admissions using workflow-defined diagnosis criteria.
 
     ICD-10 diagnoses beginning with 'C' and ICD-9 diagnoses with the first
     three digits in the inclusive range 140--239 are retained.
