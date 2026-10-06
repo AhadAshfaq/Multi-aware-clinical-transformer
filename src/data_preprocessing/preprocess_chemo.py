@@ -160,7 +160,7 @@ def load_and_prepare_events(
     hadm_to_ts_ind: dict[int, int],
 ) -> pd.DataFrame:
     """
-    Load top-100 temporal events within the full 0--336 hour observation period.
+    Load top-100 temporal events within the full 0--336 hour (14 days) observation period.
 
     Window selection for the full 14-day or last-7-day experiments occurs later
     in the corresponding pretraining or fine-tuning data formatter.
