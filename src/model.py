@@ -447,6 +447,7 @@ def build_strats(
         d,
         name="value_cve",
     )(values)
+    
     time_embeddings = CVE(
         cve_units,
         d,
