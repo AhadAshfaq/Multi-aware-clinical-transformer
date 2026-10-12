@@ -13,7 +13,7 @@ seed: 2021
 
 # Observation-window and pretraining-objective settings.
 # False: full 14-day observation window [0, 336] hours.
-# True: last-7-day observation window (168, 336] hours.
+# True: last-7-day observation window [168, 336] hours.
 USE_7_DAY_WINDOW: false
 
 # False: Pure MAE with zero-filled forecasting targets.

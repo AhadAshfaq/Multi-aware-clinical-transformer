@@ -361,9 +361,8 @@ def extend_model_with_binary_head(
     """
     Attach a single-neuron sigmoid classification head for binary fine-tuning.
 
-    The base model outputs a patient-level embedding. This function adds a
-    Dense(1, activation="sigmoid") layer to produce a probability of the
-    clinical event.
+    The classifier is attached to the base model output, which is produced
+    after global attention pooling and the existing forecast head.
     """
     input_layers = [
         Input(shape=(max_seq_length,)),
@@ -419,7 +418,7 @@ class CustomCallback(Callback):
     Track validation ROC-AUC and PR-AUC after each epoch.
 
     The monitored metric is the sum of ROC-AUC and PR-AUC, as defined in the
-    thesis early-stopping configuration.
+    early-stopping configuration.
     """
 
     def __init__(
