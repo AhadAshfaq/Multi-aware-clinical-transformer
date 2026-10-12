@@ -540,7 +540,7 @@ def main(cfg: DictConfig) -> None:
     """Train and save the best GC self-supervised pretraining checkpoint."""
     if cfg.cohort_name != "GC":
         raise ValueError(
-            "The final thesis pretraining pipeline supports GC only. "
+            "The pretraining pipeline is designed for the GC cohort. "
             f"Received cohort_name={cfg.cohort_name!r}."
         )
 
@@ -552,7 +552,8 @@ def main(cfg: DictConfig) -> None:
 
     seed = int(cfg.get("seed", 2021))
     set_global_determinism(seed)
-    rng = np.random.default_rng(seed)
+    # NumPy random-number generator; it is used to select which GC training admissions to use in each epoch.
+    rng = np.random.default_rng(seed)          
 
     data_path = Path(hydra.utils.to_absolute_path(cfg.data_path))
     mask_path = Path(hydra.utils.to_absolute_path(cfg.mask_path))
