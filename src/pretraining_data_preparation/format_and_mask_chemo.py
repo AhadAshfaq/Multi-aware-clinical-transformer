@@ -215,7 +215,7 @@ def create_forecasting_targets(
     """
     Create EMIT-compatible forecasting targets and return encoder input events.
 
-    In Hybrid mode, hours (312, 336] form the target interval and all events at
+    In Hybrid mode, hours (312, 336) form the target interval and all events at
     or before hour 312 form encoder inputs. In Pure MAE mode, targets remain
     zero-filled and the complete configured observation window is retained.
     """
@@ -225,7 +225,7 @@ def create_forecasting_targets(
         print("Pure MAE mode: forecasting targets are zero-filled.")
         return data, targets
 
-    print("Hybrid mode: using (312, 336] hours as forecasting targets.")
+    print("Hybrid mode: using (312, 336) hours as forecasting targets.")
     forecast_events = data.loc[data["hour"] > FORECAST_START_HOUR]
     encoder_events = data.loc[data["hour"] <= FORECAST_START_HOUR].copy()
 
@@ -243,7 +243,7 @@ def create_forecasting_targets(
 
 
 def retain_recent_events(data: pd.DataFrame, max_len: int) -> pd.DataFrame:
-    """Order events chronologically and retain the most recent max_len per admission."""
+    """ Order events chronologically and retain the most recent max_len per admission."""
     ordered = data[["ts_ind", "vind", "hour", "value"]].sort_values(
         by=["ts_ind", "hour", "vind"]
     )
