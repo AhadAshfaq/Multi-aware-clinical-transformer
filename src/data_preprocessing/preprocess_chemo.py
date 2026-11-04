@@ -198,11 +198,6 @@ def load_and_prepare_events(
 def append_static_demographics(events: pd.DataFrame, cohort: pd.DataFrame) -> pd.DataFrame:
     """
     Append Age and Gender as static hour-zero event records.
-
-    These static records are retained in preprocessed cohort packages. The GC
-    pretraining formatter includes them in its 102-variable vocabulary, whereas
-    the downstream AP/NF fine-tuning formatter removes them before tensor
-    construction.
     """
     required_columns = {"ts_ind", "age", "gender"}
     missing_columns = required_columns - set(cohort.columns)
