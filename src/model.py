@@ -1,8 +1,9 @@
 """
-Continuous-time event model.
+EMIT/STraTS-derived continuous-time event model.
 
 This module defines the shared neural architecture used for General Cancer (GC)
-self-supervised pretraining and fold-specific Aplasia (AP) and Neutropenic Fever (NF) fine-tuning.
+self-supervised pretraining and fold-specific Aplasia (AP) and Neutropenic
+Fever (NF) fine-tuning.
 
 Each clinical event is represented by:
     - event time,
@@ -13,7 +14,7 @@ The architecture:
 1. Encodes continuous time and values using Continuous Value Embedding (CVE).
 2. Encodes variable identity using a learned embedding table.
 3. Adds the three embeddings to form an event-triplet representation.
-4. Applies padding-aware multi-head transformer encoding.
+4. Applies padding-aware multi-head Transformer encoding.
 5. Aggregates event representations using global attention pooling.
 6. Produces a dense output used by the pretraining or downstream fine-tuning
    pipelines.
@@ -161,7 +162,7 @@ class Attention(Layer):
 
 class Transformer(Layer):
     """
-    Padding-aware multi-head transformer encoder.
+    Padding-aware multi-head Transformer encoder.
 
     Each block contains multi-head self-attention, residual connections, layer
     normalization, a two-layer feed-forward network, and dropout.
@@ -271,8 +272,11 @@ class Transformer(Layer):
         mask_value: float = -1e-30,
     ) -> tf.Tensor:
         """
-        Encode event embeddings through N transformer blocks.
-        The implementation uses `-1e-30` for masked attention logits.
+        Encode event embeddings through N Transformer blocks.
+
+        The original implementation uses `-1e-30` for masked attention logits.
+        This value is retained for compatibility with the thesis-reproduction
+        implementation and existing checkpoints.
         """
         if training is None:
             training = True
@@ -284,6 +288,7 @@ class Transformer(Layer):
             head_outputs = []
 
             for head_index in range(self.h):
+                # Each head turns every 128-dimensional event embeddings into 16-dimensional queries, keys, and values.
                 queries = K.dot(outputs, self.Wq[block_index, head_index, :, :])
                 keys = K.permute_dimensions(
                     K.dot(outputs, self.Wk[block_index, head_index, :, :]),
@@ -314,6 +319,7 @@ class Transformer(Layer):
                     lambda: tf.identity(attention_scores),
                 )
 
+                # For each event i, the output is a weighted average of the value vectors.
                 attention_weights = K.softmax(attention_scores, axis=-1)
                 head_outputs.append(K.batch_dot(attention_weights, values))
 
@@ -406,18 +412,18 @@ def build_strats(
     dropout: float,
 ) -> Model:
     """
-    Build the shared base model.
+    Build the shared EMIT/STraTS-derived base model.
 
     Parameters
     ----------
     max_len:
         Fixed number of event positions per admission.
     V:
-        Vocabulary size excluding padding. The workflow uses V=102.
+        Vocabulary size excluding padding. The thesis workflow uses V=102.
     d:
         Event-embedding dimension.
     N:
-        Number of transformer blocks.
+        Number of Transformer blocks.
     he:
         Number of attention heads.
     dropout:
@@ -435,6 +441,7 @@ def build_strats(
     values = Input(shape=(max_len,), name="values")
     variables = Input(shape=(max_len,), dtype="int32", name="variables")
 
+    # Creates a learned lookup table.
     variable_embeddings = Embedding(
         V + 1,
         d,
@@ -447,7 +454,6 @@ def build_strats(
         d,
         name="value_cve",
     )(values)
-    
     time_embeddings = CVE(
         cve_units,
         d,
@@ -458,7 +464,7 @@ def build_strats(
         [variable_embeddings, value_embeddings, time_embeddings]
     )
 
-    # Variable ID 0 denotes padding.
+    # Padding mask: Variable ID 0 denotes padding
     event_mask = Lambda(
         lambda variable_ids: K.clip(variable_ids, 0, 1),
         name="event_padding_mask",
@@ -479,6 +485,7 @@ def build_strats(
         name="global_attention",
     )(contextual_embeddings, mask=event_mask)
 
+    # One vector of length 128 for each admission.
     patient_embedding = Lambda(
         lambda tensors: K.sum(tensors[0] * tensors[1], axis=-2),
         name="attention_pooling",
