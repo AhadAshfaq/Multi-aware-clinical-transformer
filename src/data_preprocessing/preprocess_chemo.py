@@ -1,5 +1,5 @@
 """
-Prepare GC, AP, and NF cohorts for the workflow.
+Prepare GC, AP, and NF cohorts for the final thesis workflow.
 
 This script converts restricted MIMIC-IV-derived cohort files into a common
 event-table and fold-package format for the EMIT-based pipeline.
@@ -7,15 +7,16 @@ event-table and fold-package format for the EMIT-based pipeline.
 Cohort roles
 ------------
 GC:
-    External GC cohort used only for self-supervised pretraining.
+    External General Cancer cohort used only for self-supervised pretraining.
     A deterministic 80/20 train/validation split is created. No test split is
     created because GC outcome labels are not used during pretraining.
 
 AP and NF:
-    Downstream AP and NF cohorts used for fold-specific supervised fine-tuning 
-    and held-out test evaluation. The script preserves the five predefined 
-    train/validation/test splits supplied with the cohort extraction protocol.
-    
+    Downstream Aplasia and Neutropenic Fever cohorts used for fold-specific
+    supervised fine-tuning and held-out test evaluation. The script preserves
+    the five predefined train/validation/test splits supplied with the cohort
+    extraction protocol.
+
 Processing steps
 ----------------
 1. Map raw MIMIC-IV admission identifiers to compact, cohort-specific `ts_ind`
@@ -160,7 +161,7 @@ def load_and_prepare_events(
     hadm_to_ts_ind: dict[int, int],
 ) -> pd.DataFrame:
     """
-    Load top-100 temporal events within the full 0--336 hour (14 days) observation period.
+    Load top-100 temporal events within the full 0--336 hour observation period.
 
     Window selection for the full 14-day or last-7-day experiments occurs later
     in the corresponding pretraining or fine-tuning data formatter.
