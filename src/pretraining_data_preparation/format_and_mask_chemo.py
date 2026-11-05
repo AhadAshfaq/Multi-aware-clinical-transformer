@@ -1,11 +1,11 @@
 """
-Create GC pretraining tensors and event-position masks for the workflow.
+Create GC pretraining tensors and event-position masks for the thesis workflow.
 
 This script converts the patient-excluded General Cancer (GC) cohort package
 created by `preprocess_chemo.py` into dense arrays used for self-supervised
 pretraining of the EMIT-based model.
 
-The workflow uses GC only for self-supervised pretraining:
+The final thesis workflow uses GC only for self-supervised pretraining:
     GC pretraining tensors and masks -> GC checkpoint -> AP/NF fine-tuning.
 
 The script performs the following steps:
@@ -15,12 +15,14 @@ The script performs the following steps:
    clinical variables plus Age and Gender.
 4. Supports Hybrid reconstruction--forecasting and Pure MAE pretraining.
 5. Orders events chronologically, retains the most recent `max_len` events per
-   admission, and creates padded time, value, variable-ID, and clinical-weight matrices.
+   admission, and creates padded time, value, variable-ID, and clinical-weight
+   matrices.
 6. Generates event-position masks using one configured strategy:
    `rate_of_change`, `random`, `clinical`, `frequency`, or `temporal`.
 7. Saves train/validation tensors and train/validation masks.
 
-All inputs and outputs are derived from the restricted MIMIC-IV data and cannot be committed to a public repository.
+All inputs and outputs are derived from restricted MIMIC-IV data and must not
+be committed to a public repository.
 """
 
 from __future__ import annotations
@@ -101,7 +103,8 @@ def load_gc_package(
     """
     Load the GC preprocessed event table and train/validation/test index arrays.
 
-    GC is used only for pretraining. The package must therefore contain an empty test-index array.
+    GC is used only for pretraining. The package must therefore contain an
+    empty test-index array.
     """
     with package_path.open("rb") as handle:
         data, _, train_indices, valid_indices, test_indices = pickle.load(handle)
@@ -215,7 +218,7 @@ def create_forecasting_targets(
     """
     Create EMIT-compatible forecasting targets and return encoder input events.
 
-    In Hybrid mode, hours (312, 336) form the target interval and all events at
+    In Hybrid mode, hours (312, 336] form the target interval and all events at
     or before hour 312 form encoder inputs. In Pure MAE mode, targets remain
     zero-filled and the complete configured observation window is retained.
     """
@@ -225,7 +228,7 @@ def create_forecasting_targets(
         print("Pure MAE mode: forecasting targets are zero-filled.")
         return data, targets
 
-    print("Hybrid mode: using (312, 336) hours as forecasting targets.")
+    print("Hybrid mode: using (312, 336] hours as forecasting targets.")
     forecast_events = data.loc[data["hour"] > FORECAST_START_HOUR]
     encoder_events = data.loc[data["hour"] <= FORECAST_START_HOUR].copy()
 
@@ -243,7 +246,7 @@ def create_forecasting_targets(
 
 
 def retain_recent_events(data: pd.DataFrame, max_len: int) -> pd.DataFrame:
-    """ Order events chronologically and retain the most recent max_len per admission."""
+    """Order events chronologically and retain the most recent max_len per admission."""
     ordered = data[["ts_ind", "vind", "hour", "value"]].sort_values(
         by=["ts_ind", "hour", "vind"]
     )
@@ -490,15 +493,15 @@ def main() -> None:
 
     np.savez(
         tensors_path,
-        fore_train_ip=all_inputs[:, train_indices],
-        fore_train_op=forecasting_targets[train_indices],
-        fore_valid_ip=all_inputs[:, valid_indices],
-        fore_valid_op=forecasting_targets[valid_indices],
+        fore_train_ip=all_inputs[:, train_indices],         # GC training input tensor 
+        fore_train_op=forecasting_targets[train_indices],   # GC training forecasting targets
+        fore_valid_ip=all_inputs[:, valid_indices],         # GC validation input tensor
+        fore_valid_op=forecasting_targets[valid_indices],   # GC validation forecasting targets
     )
     np.savez(
         masks_path,
-        fore_train_masks=masks[train_indices],
-        fore_val_masks=masks[valid_indices],
+        fore_train_masks=masks[train_indices],      # Event-position masks for GC training
+        fore_val_masks=masks[valid_indices],        # Event-position masks for GC validation
     )
 
     observed_event_count = int(np.sum(variables > PADDING_VARIABLE_ID))
