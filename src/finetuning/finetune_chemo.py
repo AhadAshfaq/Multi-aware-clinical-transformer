@@ -122,9 +122,6 @@ class BaseCycleIndex:
 class CycleIndexBalanced(BaseCycleIndex):
     """
     Enforce a guaranteed minimum number of positive-class samples per batch.
-
-    This stratified batching strategy is essential for highly imbalanced
-    clinical event prediction tasks such as AP and NF.
     """
 
     def __init__(
@@ -144,8 +141,8 @@ class CycleIndexBalanced(BaseCycleIndex):
         self.min_class1 = min_class1
         self.shuffle = shuffle
 
-        self.class1_inds = self.indices[self.y == 1]
-        self.class0_inds = self.indices[self.y == 0]
+        self.class1_inds = self.indices[self.y == 1]        # positive AP/NF admissions
+        self.class0_inds = self.indices[self.y == 0]        # negative AP/NF admissions
 
         self.pointer0 = 0
         self.pointer1 = 0
@@ -235,13 +232,15 @@ def load_and_generate_train_val_test_sets(
         data = data.loc[data.hour <= 336]
         print("[*] Applying Full 14-Day Window (0h - 336h)")
 
+    # Restrict the tables to the supplied fold admissions.
     all_indices = np.concatenate((train_ind, valid_ind, test_ind))
     data = data.loc[data.ts_ind.isin(all_indices)]
     oc = oc.loc[oc.ts_ind.isin(all_indices)]
 
     data.loc[(data.variable == "Age") & (data.value > 200), "value"] = 91.4
 
-    y = (
+    # Extract the outcome labels.
+    y = (   
         oc.sort_values(by="ts_ind")["in_hospital_mortality"]
         .to_numpy()
         .astype("float32")
@@ -292,12 +291,14 @@ def load_and_generate_train_val_test_sets(
     valid_ind = [i for i in valid_ind if i < N]
     test_ind = [i for i in test_ind if i < N]
 
+    # Separate training, validation, and test arrays.
     train_ip = [ip[train_ind] for ip in [times_inp, values_inp, varis_inp]]
     valid_ip = [ip[valid_ind] for ip in [times_inp, values_inp, varis_inp]]
     test_ip = [ip[test_ind] for ip in [times_inp, values_inp, varis_inp]]
 
     del times_inp, values_inp, varis_inp
 
+    # Labels are selected using the same split indices.
     train_op = y[train_ind]
     valid_op = y[valid_ind]
     test_op = y[test_ind]
@@ -361,8 +362,9 @@ def extend_model_with_binary_head(
     """
     Attach a single-neuron sigmoid classification head for binary fine-tuning.
 
-    The classifier is attached to the base model output, which is produced
-    after global attention pooling and the existing forecast head.
+    The base model outputs a patient-level embedding. This function adds a
+    Dense(1, activation="sigmoid") layer to produce a probability of the
+    clinical event.
     """
     input_layers = [
         Input(shape=(max_seq_length,)),
@@ -378,7 +380,7 @@ def extend_model_with_binary_head(
 
 def mortality_loss(y_true: tf.Tensor, y_pred: tf.Tensor) -> tf.Tensor:
     """
-    Unweighted binary cross-entropy for downstream fine-tuning.
+    Binary cross-entropy for downstream fine-tuning.
     """
     return K.mean(K.binary_crossentropy(y_true, y_pred), axis=-1)
 
@@ -418,7 +420,7 @@ class CustomCallback(Callback):
     Track validation ROC-AUC and PR-AUC after each epoch.
 
     The monitored metric is the sum of ROC-AUC and PR-AUC, as defined in the
-    early-stopping configuration.
+    thesis early-stopping configuration.
     """
 
     def __init__(
@@ -535,18 +537,21 @@ def train_and_evaluate_model(
     history :
         Dictionary containing epoch-wise training and validation metrics.
     """
+
+    # Configure a gradually decreasing learning rate.
     lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(
         initial_learning_rate=learning_rate,
         decay_steps=100_000,
         decay_rate=0.96,
         staircase=True,
     )
-
+    # Configure the loss and optimizer.
     model.compile(
         loss=mortality_loss,
         optimizer=Adam(learning_rate=lr_schedule, weight_decay=weight_decay),
     )
 
+    # Set up validation monitoring and early stopping
     es = EarlyStopping(
         monitor="custom_metric",
         patience=patience,
@@ -558,6 +563,7 @@ def train_and_evaluate_model(
         batch_size=batch_size,
     )
 
+    # Number of batches per epoch
     train_indices = np.arange(len(train_output))
     steps_per_epoch = max(1, len(train_indices) // batch_size)
 
@@ -692,6 +698,7 @@ def main(cfg: DictConfig) -> None:
         use_7_day_window=use_7_day_window,
     )
 
+    # Create indices within the training and validation arrays
     train_inds = np.arange(len(train_op))
     valid_inds = np.arange(len(valid_op))
 
@@ -704,6 +711,7 @@ def main(cfg: DictConfig) -> None:
         train_subset_size = int(ld * len(train_inds) / 100)
         valid_subset_size = int(ld * len(valid_inds) / 100)
 
+        # To select where each repeat’s subset starts.
         train_starts = [
             int(i)
             for i in np.linspace(
@@ -725,14 +733,14 @@ def main(cfg: DictConfig) -> None:
 
         for i in range(repeats):
             print(f"Repeat {i}, ld {ld}")
-
+            # Select the current repeat’s admissions
             curr_train_ind = train_inds[
                 train_starts[i] : train_starts[i] + train_subset_size
             ]
             curr_valid_ind = valid_inds[
                 valid_starts[i] : valid_starts[i] + valid_subset_size
             ]
-
+            # Extract matching inputs and labels.
             curr_train_ip = [data[curr_train_ind] for data in train_ip]
             curr_train_op = train_op[curr_train_ind]
             curr_valid_ip = [data[curr_valid_ind] for data in valid_ip]
