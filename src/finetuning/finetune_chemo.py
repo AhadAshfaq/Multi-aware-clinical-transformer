@@ -16,9 +16,6 @@ Key thesis-relevant features
   checkpoint by the sum of these two metrics.
 - Reports final performance on a held-out test set with ROC-AUC, PR-AUC,
   minimum of precision/recall, and maximum F1.
-
-All tensors, labels, and results are derived from restricted MIMIC-IV data
-and must not be committed to a public repository.
 """
 
 from __future__ import annotations
