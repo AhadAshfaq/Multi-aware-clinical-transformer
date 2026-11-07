@@ -17,9 +17,6 @@ The script performs the following steps:
 5. Generates event-position masks using one configured strategy:
    `rate_of_change`, `random`, `clinical`, `frequency`, or `temporal`.
 6. Saves train/validation arrays and train/validation masks.
-
-All inputs and outputs are derived from restricted MIMIC-IV data and must not
-be committed to a public repository.
 """
 
 from __future__ import annotations
