@@ -21,9 +21,6 @@ The architecture:
 
 Public model input order is always:
     [times, values, variables]
-
-Variable ID 0 is reserved for padding. IDs 1--102 correspond to the shared
-fixed vocabulary of 100 clinical variables plus Age and Gender.
 """
 
 from __future__ import annotations
