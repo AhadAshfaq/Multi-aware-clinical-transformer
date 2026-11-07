@@ -13,11 +13,10 @@ The script performs the following steps:
 2. Applies the configured full-14-day or last-7-day observation window.
 3. Supports Hybrid reconstruction--forecasting and Pure MAE pretraining.
 4. Orders events chronologically, retains the most recent `max_len` events per
-   admission, and creates padded time, value, variable-ID, and clinical-weight
-   matrices.
+   admission, and creates padded time, value, variable-ID, and clinical-weight arrays.
 5. Generates event-position masks using one configured strategy:
    `rate_of_change`, `random`, `clinical`, `frequency`, or `temporal`.
-6. Saves train/validation tensors and train/validation masks.
+6. Saves train/validation arrays and train/validation masks.
 
 All inputs and outputs are derived from restricted MIMIC-IV data and must not
 be committed to a public repository.
