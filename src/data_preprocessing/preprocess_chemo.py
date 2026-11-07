@@ -23,8 +23,7 @@ Processing steps
    values suitable for dense tensor construction.
 2. Retain the supplied top-100 clinical variables and events recorded from
    hour 0 through hour 336 after admission.
-3. Append Age and Gender as static hour-zero event records.
-4. Save a preprocessed GC package and five fold-specific AP/NF packages.
+3. Save a preprocessed GC package and five fold-specific AP/NF packages.
 """
 
 from __future__ import annotations
