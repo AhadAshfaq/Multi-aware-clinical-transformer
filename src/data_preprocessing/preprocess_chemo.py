@@ -25,12 +25,6 @@ Processing steps
    hour 0 through hour 336 after admission.
 3. Append Age and Gender as static hour-zero event records.
 4. Save a preprocessed GC package and five fold-specific AP/NF packages.
-
-Observation-window selection, chronological ordering, tail truncation, and
-tensor construction occur later in the pretraining and fine-tuning pipelines.
-
-All inputs and outputs are derived from restricted MIMIC-IV data. They must not
-be committed to a public repository.
 """
 
 from __future__ import annotations
